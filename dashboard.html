@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard - Travel AI</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="container">
+  <h2>Plan Your Trip ✈️</h2>
+
+  <input type="text" id="location" placeholder="Your Location">
+  <input type="number" id="budget" placeholder="Budget (₹)">
+  <input type="number" id="days" placeholder="Number of Days">
+
+  <select id="mood">
+    <option value="">Select Mood</option>
+    <option>Family</option>
+    <option>Couple</option>
+    <option>Solo</option>
+    <option>Elders</option>
+  </select>
+
+  <button onclick="goToChat()">Get AI Suggestions</button>
+</div>
+
+<script>
+function goToChat() {
+  localStorage.setItem("location", document.getElementById("location").value);
+  localStorage.setItem("budget", document.getElementById("budget").value);
+  localStorage.setItem("days", document.getElementById("days").value);
+  localStorage.setItem("mood", document.getElementById("mood").value);
+
+  window.location.href = "chat.html";
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Travel AI Planner</title>
+
+<style>
+body{
+  font-family: Arial;
+  background:#eef5ff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+.chat-container{
+  width:480px;
+  background:white;
+  border-radius:12px;
+  box-shadow:0 4px 12px rgba(0,0,0,.15);
+  display:flex;
+  flex-direction:column;
+}
+.header{
+  background:#007bff;
+  color:white;
+  padding:14px;
+  text-align:center;
+  border-radius:12px 12px 0 0;
+}
+.chat{
+  flex:1;
+  padding:12px;
+  overflow-y:auto;
+}
+.bot,.user{
+  padding:10px;
+  margin:8px 0;
+  border-radius:8px;
+  max-width:90%;
+}
+.bot{background:#f1f1f1;}
+.user{background:#007bff;color:white;margin-left:auto;}
+.options button{
+  margin:4px;
+  padding:6px 10px;
+  border:none;
+  border-radius:6px;
+  background:#007bff;
+  color:white;
+  cursor:pointer;
+  font-size:13px;
+}
+input{
+  width:100%;
+  padding:8px;
+  margin-top:6px;
+}
+button.send{
+  margin-top:6px;
+  width:100%;
+  padding:8px;
+  background:#28a745;
+  border:none;
+  color:white;
+  border-radius:6px;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="chat-container">
+  <div class="header">🌍 Travel AI Planner</div>
+  <div class="chat" id="chat"></div>
+</div>
+
+<script>
+const chat = document.getElementById("chat");
+let lang = "en";
+let data = {};
+
+/* 🌐 30+ LANGUAGE DICTIONARY */
+const T = {
+en:{dest:"Enter your destination",weather:"Estimated weather in",budget:"Enter your budget",days:"How many days?",plan:"Day Travel Plan for"},
+hi:{dest:"अपना गंतव्य दर्ज करें",weather:"अनुमानित मौसम",budget:"अपना बजट दर्ज करें",days:"कितने दिन?",plan:"दिन की यात्रा योजना"},
+te:{dest:"మీ గమ్యస్థానాన్ని నమోదు చేయండి",weather:"అంచనా వాతావరణం",budget:"మీ బడ్జెట్ నమోదు చేయండి",days:"ఎన్ని రోజులు?",plan:"రోజుల ప్రయాణ ప్రణాళిక"},
+ta:{dest:"உங்கள் இலக்கை உள்ளிடவும்",weather:"மதிப்பிடப்பட்ட வானிலை",budget:"பட்ஜெட்டை உள்ளிடவும்",days:"எத்தனை நாட்கள்?",plan:"பயண திட்டம்"},
+kn:{dest:"ನಿಮ್ಮ ಗಮ್ಯಸ್ಥಾನ ನಮೂದಿಸಿ",weather:"ಅಂದಾಜು ಹವಾಮಾನ",budget:"ಬಜೆಟ್ ನಮೂದಿಸಿ",days:"ಎಷ್ಟು ದಿನಗಳು?",plan:"ಪ್ರಯಾಣ ಯೋಜನೆ"},
+ml:{dest:"ലക്ഷ്യം നൽകുക",weather:"അനുമാനിച്ച കാലാവസ്ഥ",budget:"ബജറ്റ് നൽകുക",days:"എത്ര ദിവസം?",plan:"യാത്ര പദ്ധതി"},
+mr:{dest:"गंतव्य प्रविष्ट करा",weather:"अंदाजे हवामान",budget:"बजेट प्रविष्ट करा",days:"किती दिवस?",plan:"प्रवास योजना"},
+bn:{dest:"গন্তব্য লিখুন",weather:"আনুমানিক আবহাওয়া",budget:"বাজেট লিখুন",days:"কয়দিন?",plan:"ভ্রমণ পরিকল্পনা"},
+gu:{dest:"તમારું ગંતવ્ય દાખલ કરો",weather:"અંદાજિત હવામાન",budget:"બજેટ દાખલ કરો",days:"કેટલા દિવસ?",plan:"મુસાફરી યોજના"},
+pa:{dest:"ਗੰਤਵ੍ਯ ਦਰਜ ਕਰੋ",weather:"ਅਨੁਮਾਨਿਤ ਮੌਸਮ",budget:"ਬਜਟ ਦਰਜ ਕਰੋ",days:"ਕਿੰਨੇ ਦਿਨ?",plan:"ਯਾਤਰਾ ਯੋਜਨਾ"},
+
+fr:{dest:"Entrez la destination",weather:"Météo estimée à",budget:"Entrez le budget",days:"Combien de jours ?",plan:"Plan de voyage"},
+es:{dest:"Ingrese el destino",weather:"Clima estimado en",budget:"Ingrese el presupuesto",days:"¿Cuántos días?",plan:"Plan de viaje"},
+de:{dest:"Reiseziel eingeben",weather:"Geschätztes Wetter in",budget:"Budget eingeben",days:"Wie viele Tage?",plan:"Reiseplan"},
+it:{dest:"Inserisci destinazione",weather:"Meteo stimato a",budget:"Inserisci budget",days:"Quanti giorni?",plan:"Piano di viaggio"},
+pt:{dest:"Digite o destino",weather:"Clima estimado em",budget:"Digite o orçamento",days:"Quantos dias?",plan:"Plano de viagem"},
+ru:{dest:"Введите пункт назначения",weather:"Примерная погода в",budget:"Введите бюджет",days:"Сколько дней?",plan:"План поездки"},
+zh:{dest:"输入目的地",weather:"预计天气",budget:"输入预算",days:"多少天？",plan:"旅行计划"},
+ja:{dest:"目的地を入力",weather:"予想される天気",budget:"予算を入力",days:"何日？",plan:"旅行計画"},
+ko:{dest:"목적지 입력",weather:"예상 날씨",budget:"예산 입력",days:"며칠?",plan:"여행 계획"},
+ar:{dest:"أدخل الوجهة",weather:"الطقس المتوقع في",budget:"أدخل الميزانية",days:"كم عدد الأيام؟",plan:"خطة الرحلة"},
+tr:{dest:"Varış noktası girin",weather:"Tahmini hava durumu",budget:"Bütçe girin",days:"Kaç gün?",plan:"Seyahat planı"},
+nl:{dest:"Bestemming invoeren",weather:"Geschat weer in",budget:"Budget invoeren",days:"Hoeveel dagen?",plan:"Reisplan"},
+sv:{dest:"Ange destination",weather:"Uppskattat väder i",budget:"Ange budget",days:"Hur många dagar?",plan:"Reseplan"},
+pl:{dest:"Wpisz cel podróży",weather:"Szacowana pogoda w",budget:"Wpisz budżet",days:"Ile dni?",plan:"Plan podróży"},
+th:{dest:"ป้อนจุดหมาย",weather:"สภาพอากาศโดยประมาณ",budget:"ป้อนงบประมาณ",days:"กี่วัน?",plan:"แผนการเดินทาง"},
+vi:{dest:"Nhập điểm đến",weather:"Thời tiết ước tính",budget:"Nhập ngân sách",days:"Bao nhiêu ngày?",plan:"Kế hoạch du lịch"}
+};
+
+/* SIMPLE WEATHER (GLOBAL) */
+function getWeather(){
+  return "Moderate 🌤️ (auto-estimated)";
+}
+
+/* UI HELPERS */
+function bot(m){
+  let d=document.createElement("div");
+  d.className="bot";
+  d.innerHTML=m;
+  chat.appendChild(d);
+  chat.scrollTop=chat.scrollHeight;
+}
+function user(m){
+  let d=document.createElement("div");
+  d.className="user";
+  d.innerText=m;
+  chat.appendChild(d);
+  chat.scrollTop=chat.scrollHeight;
+}
+function inputBox(ph,cb){
+  let div=document.createElement("div");
+  let i=document.createElement("input");
+  let b=document.createElement("button");
+  b.innerText="Send";
+  b.className="send";
+  i.placeholder=ph;
+  b.onclick=()=>{
+    if(i.value.trim()){
+      user(i.value);
+      div.remove();
+      cb(i.value);
+    }
+  };
+  div.appendChild(i);
+  div.appendChild(b);
+  chat.appendChild(div);
+}
+
+/* STEP 1 – LANGUAGE */
+bot("🌐 Select Language");
+let langDiv=document.createElement("div");
+langDiv.className="options";
+["English","Hindi","Telugu","Tamil","Kannada","Malayalam","Marathi","Bengali","Gujarati","Punjabi",
+ "French","Spanish","German","Italian","Portuguese","Russian","Chinese","Japanese","Korean","Arabic",
+ "Turkish","Dutch","Swedish","Polish","Thai","Vietnamese"].forEach(l=>{
+   let b=document.createElement("button");
+   b.innerText=l;
+   b.onclick=()=>{
+     user(l);
+     langDiv.remove();
+     lang = {
+       English:"en",Hindi:"hi",Telugu:"te",Tamil:"ta",Kannada:"kn",Malayalam:"ml",
+       Marathi:"mr",Bengali:"bn",Gujarati:"gu",Punjabi:"pa",French:"fr",Spanish:"es",
+       German:"de",Italian:"it",Portuguese:"pt",Russian:"ru",Chinese:"zh",Japanese:"ja",
+       Korean:"ko",Arabic:"ar",Turkish:"tr",Dutch:"nl",Swedish:"sv",Polish:"pl",
+       Thai:"th",Vietnamese:"vi"
+     }[l];
+     askDestination();
+   };
+   langDiv.appendChild(b);
+});
+chat.appendChild(langDiv);
+
+/* STEP 2 – DESTINATION */
+function askDestination(){
+  bot(T[lang].dest);
+  inputBox(T[lang].dest,d=>{
+    data.dest=d;
+    bot(`${T[lang].weather} ${d}: ${getWeather()}`);
+    askBudget();
+  });
+}
+
+/* STEP 3 – BUDGET */
+function askBudget(){
+  bot(T[lang].budget + " (ex: 5000 / 10000)");
+  inputBox("5000 / 10000",b=>{
+    data.budget=b;
+    askDays();
+  });
+}
+
+/* STEP 4 – DAYS */
+function askDays(){
+  bot(T[lang].days);
+  let dDiv=document.createElement("div");
+  dDiv.className="options";
+  ["1","2","3","5","7"].forEach(d=>{
+    let b=document.createElement("button");
+    b.innerText=d;
+    b.onclick=()=>{
+      user(d);
+      dDiv.remove();
+      data.days=parseInt(d);
+      generatePlan();
+    };
+    dDiv.appendChild(b);
+  });
+  chat.appendChild(dDiv);
+}
+
+
+function generatePlan() {
+
+  bot(`🗺️ ${data.days} ${T[lang].plan} ${data.dest}`);
+
+  bot(`😊 What is your travel mood?<br>
+👉 Solo / Family / Friends / Couple`);
+
+  const dailySchedule = [
+    { time: "☕ 9:00 AM – 10:30 AM", type: "cafe" },
+    { time: "🏛️ 11:00 AM – 2:00 PM", type: "famous landmark" },
+    { time: "🌅 4:00 PM – 7:00 PM", type: "beach or scenic place" }
+  ];
+
+  const totalDays = parseInt(data.days, 10);   // ✅ FIX
+
+  for (let day = 1; day <= totalDays; day++) {
+
+    bot(`<b>📅 Day ${day}:</b><br><br>`);
+
+    dailySchedule.forEach(slot => {
+
+      let place = `${data.dest} ${slot.type}`;
+      let imageUrl =
+        `https://source.unsplash.com/400x250/?${encodeURIComponent(place)}`;
+
+      bot(`
+<b>${slot.time}</b><br>
+📍 ${place}<br><br>
+
+<img src="${imageUrl}"
+     alt="${place}"
+     style="width:100%; border-radius:10px;"><br><br>
+
+<a target="_blank" href="https://www.google.com/maps/search/${encodeURIComponent(place)}">
+📍 Google Maps</a> |
+<a target="_blank" href="https://www.google.com/search?q=${encodeURIComponent(place + ' reviews')}">
+⭐ Reviews</a><br><br>
+`);
+    });
+  }
+
+  bot(`💰 Estimated Budget: ${data.budget}`);
+  bot(`✅ Trip plan completed for ${data.dest}`);
+}
+
+
+</script>
+
+</body>
+</html>
